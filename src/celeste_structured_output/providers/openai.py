@@ -1,5 +1,9 @@
 from typing import Any, AsyncIterator, List, Optional, get_origin
 
+from celeste_client.base import BaseStructuredClient
+from celeste_client.core.config import OPENAI_API_KEY
+from celeste_client.core.enums import OpenAIStructuredModel, StructuredOutputProvider
+from celeste_client.core.types import AIResponse, AIUsage
 from openai import AsyncOpenAI
 from openai.types.chat import (
     ChatCompletionMessageParam,
@@ -7,11 +11,6 @@ from openai.types.chat import (
     ChatCompletionUserMessageParam,
 )
 from pydantic import BaseModel, create_model
-
-from celeste_client.base import BaseStructuredClient
-from celeste_client.core.config import OPENAI_API_KEY
-from celeste_client.core.enums import StructuredOutputProvider, OpenAIStructuredModel
-from celeste_client.core.types import AIResponse, AIUsage
 
 
 class OpenAIClient(BaseStructuredClient):
@@ -44,7 +43,10 @@ class OpenAIClient(BaseStructuredClient):
             # Handle list types by wrapping them in a Pydantic model
             if get_origin(response_schema) is list:
                 # Create a dynamic model with the list type
-                ListWrapper = create_model("ListWrapper", data=(response_schema, ...))
+                ListWrapper = create_model(
+                    "ListWrapper",
+                    data=(list[response_schema], ...),  # type: ignore[valid-type]
+                )
 
                 response = await self.client.chat.completions.parse(
                     messages=messages,
@@ -101,7 +103,10 @@ class OpenAIClient(BaseStructuredClient):
 
             if is_list:
                 # Create a dynamic model with the list type
-                ListWrapper = create_model("ListWrapper", data=(response_schema, ...))
+                ListWrapper = create_model(
+                    "ListWrapper",
+                    data=(list[response_schema], ...),  # type: ignore[valid-type]
+                )
                 actual_schema = ListWrapper
 
             async with self.client.beta.chat.completions.stream(
