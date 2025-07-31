@@ -6,12 +6,14 @@ from pydantic import BaseModel
 
 from ..base import BaseStructuredClient
 from ..core.config import GOOGLE_API_KEY
-from ..core.enums import StructuredOutputProvider, GoogleStructuredModel
-from ..core.types import StructuredResponse, AIUsage
+from ..core.enums import GoogleStructuredModel, StructuredOutputProvider
+from ..core.types import AIUsage, StructuredResponse
 
 
 class GoogleStructuredClient(BaseStructuredClient):
-    def __init__(self, model: str = GoogleStructuredModel.FLASH_LITE, **kwargs: Any) -> None:
+    def __init__(
+        self, model: str = GoogleStructuredModel.FLASH_LITE, **kwargs: Any
+    ) -> None:
         super().__init__(**kwargs)
 
         self.client = genai.Client(api_key=GOOGLE_API_KEY)
@@ -28,7 +30,10 @@ class GoogleStructuredClient(BaseStructuredClient):
         )
 
     async def generate_content(
-        self, prompt: str, response_schema: BaseModel, **kwargs: Any
+        self,
+        prompt: str,
+        response_schema: type[BaseModel],
+        **kwargs: Any,
     ) -> StructuredResponse:
         config = kwargs.pop("config", {})
 
@@ -57,7 +62,10 @@ class GoogleStructuredClient(BaseStructuredClient):
         )
 
     async def stream_generate_content(
-        self, prompt: str, response_schema: BaseModel, **kwargs: Any
+        self,
+        prompt: str,
+        response_schema: type[BaseModel],
+        **kwargs: Any,
     ) -> AsyncIterator[StructuredResponse]:
         config = kwargs.pop("config", {})
 
@@ -66,7 +74,7 @@ class GoogleStructuredClient(BaseStructuredClient):
 
         last_usage_metadata = None
         has_yielded_content = False
-        
+
         async for chunk in self.client.aio.models.generate_content_stream(
             model=self.model_name,
             contents=prompt,
@@ -75,7 +83,7 @@ class GoogleStructuredClient(BaseStructuredClient):
             # Track usage metadata
             if hasattr(chunk, "usage_metadata") and chunk.usage_metadata:
                 last_usage_metadata = chunk.usage_metadata
-            
+
             # When using structured output, Google returns the parsed object directly
             if hasattr(chunk, "parsed") and chunk.parsed:
                 has_yielded_content = True

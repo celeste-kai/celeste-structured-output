@@ -1,5 +1,9 @@
 from typing import Any, AsyncIterator, List, Optional, get_origin
 
+from celeste_client.base import BaseStructuredClient
+from celeste_client.core.config import OPENAI_API_KEY
+from celeste_client.core.enums import OpenAIStructuredModel, StructuredOutputProvider
+from celeste_client.core.types import AIResponse, AIUsage
 from openai import AsyncOpenAI
 from openai.types.chat import (
     ChatCompletionMessageParam,
@@ -7,11 +11,6 @@ from openai.types.chat import (
     ChatCompletionUserMessageParam,
 )
 from pydantic import BaseModel, create_model
-
-from celeste_client.base import BaseStructuredClient
-from celeste_client.core.config import OPENAI_API_KEY
-from celeste_client.core.enums import StructuredOutputProvider, OpenAIStructuredModel
-from celeste_client.core.types import AIResponse, AIUsage
 
 
 class OpenAIClient(BaseStructuredClient):
@@ -34,7 +33,10 @@ class OpenAIClient(BaseStructuredClient):
         )
 
     async def generate_content(
-        self, prompt: str, response_schema: Optional[BaseModel] = None, **kwargs: Any
+        self,
+        prompt: str,
+        response_schema: Optional[type[BaseModel]] = None,
+        **kwargs: Any,
     ) -> AIResponse:
         messages: List[ChatCompletionMessageParam] = [
             ChatCompletionUserMessageParam(role="user", content=prompt)
@@ -87,7 +89,10 @@ class OpenAIClient(BaseStructuredClient):
         )
 
     async def stream_generate_content(
-        self, prompt: str, response_schema: Optional[BaseModel] = None, **kwargs: Any
+        self,
+        prompt: str,
+        response_schema: Optional[type[BaseModel]] = None,
+        **kwargs: Any,
     ) -> AsyncIterator[AIResponse]:
         messages: List[ChatCompletionMessageParam] = [
             ChatCompletionUserMessageParam(role="user", content=prompt)

@@ -17,14 +17,20 @@ class BaseStructuredClient(ABC):
 
     @abstractmethod
     async def generate_content(
-        self, prompt: str, response_schema: BaseModel, **kwargs: Any
+        self,
+        prompt: str,
+        response_schema: Optional[type[BaseModel]] = None,
+        **kwargs: Any,
     ) -> StructuredResponse:
         """Generates a single response."""
         pass
 
     @abstractmethod
     async def stream_generate_content(
-        self, prompt: str, response_schema: BaseModel, **kwargs: Any
+        self,
+        prompt: str,
+        response_schema: Optional[type[BaseModel]] = None,
+        **kwargs: Any,
     ) -> AsyncIterator[StructuredResponse]:
         """Streams the response chunk by chunk."""
         pass
