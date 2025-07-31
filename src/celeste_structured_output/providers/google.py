@@ -6,16 +6,21 @@ from pydantic import BaseModel
 
 from ..base import BaseStructuredClient
 from ..core.config import GOOGLE_API_KEY
-from ..core.enums import StructuredOutputProvider, GoogleStructuredModel
+from ..core.enums import (
+    StructuredOutputProvider,
+    GoogleStructuredModel as GoogleModel,
+)
 from ..core.types import StructuredResponse, AIUsage
 
 
 class GoogleStructuredClient(BaseStructuredClient):
-    def __init__(self, model: str = GoogleStructuredModel.FLASH_LITE, **kwargs: Any) -> None:
+    def __init__(
+        self, model: str | GoogleModel = GoogleModel.FLASH_LITE, **kwargs: Any
+    ) -> None:
         super().__init__(**kwargs)
 
         self.client = genai.Client(api_key=GOOGLE_API_KEY)
-        self.model_name = model
+        self.model_name = model.value if isinstance(model, GoogleModel) else model
 
     def format_usage(self, usage_data: Any) -> Optional[AIUsage]:
         """Convert Gemini usage data to AIUsage."""
