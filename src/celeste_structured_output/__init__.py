@@ -26,10 +26,15 @@ def create_structured_client(
 
         return OpenAIClient(**kwargs)
 
-    if provider == StructuredOutputProvider.MISTRAL:
-        from .providers.mistral import MistralClient
+    if provider == StructuredOutputProvider.HUGGINGFACE:
+        from .providers.huggingface import HuggingFaceStructuredClient
 
-        return MistralClient(**kwargs)
+        return HuggingFaceStructuredClient(**kwargs)
+
+    if provider == StructuredOutputProvider.MISTRAL:
+        from .providers.mistral import MistralStructuredClient
+
+        return MistralStructuredClient(**kwargs)
 
     if provider == StructuredOutputProvider.ANTHROPIC:
         from .providers.anthropic import AnthropicStructuredClient
@@ -43,5 +48,5 @@ __all__ = [
     "create_structured_client",
     "BaseStructuredClient",
     "StructuredOutputProvider",
-    "StructuredResponse"
+    "StructuredResponse",
 ]
