@@ -1,9 +1,5 @@
 from typing import Any, AsyncIterator, List, Optional, get_origin
 
-from celeste_client.base import BaseStructuredClient
-from celeste_client.core.config import OPENAI_API_KEY
-from celeste_client.core.enums import OpenAIStructuredModel, StructuredOutputProvider
-from celeste_client.core.types import AIResponse, AIUsage
 from openai import AsyncOpenAI
 from openai.types.chat import (
     ChatCompletionMessageParam,
@@ -11,6 +7,11 @@ from openai.types.chat import (
     ChatCompletionUserMessageParam,
 )
 from pydantic import BaseModel, create_model
+
+from ..base import BaseStructuredClient
+from ..core.config import OPENAI_API_KEY
+from ..core.enums import OpenAIStructuredModel, StructuredOutputProvider
+from ..core.types import AIUsage, StructuredResponse
 
 
 class OpenAIClient(BaseStructuredClient):
@@ -34,7 +35,7 @@ class OpenAIClient(BaseStructuredClient):
 
     async def generate_content(
         self, prompt: str, response_schema: Optional[BaseModel] = None, **kwargs: Any
-    ) -> AIResponse:
+    ) -> StructuredResponse:
         messages: List[ChatCompletionMessageParam] = [
             ChatCompletionUserMessageParam(role="user", content=prompt)
         ]
@@ -81,7 +82,7 @@ class OpenAIClient(BaseStructuredClient):
         else:
             content = response.choices[0].message.content or ""
 
-        return AIResponse(
+        return StructuredResponse(
             content=content,
             usage=usage,
             provider=StructuredOutputProvider.OPENAI,
@@ -90,7 +91,7 @@ class OpenAIClient(BaseStructuredClient):
 
     async def stream_generate_content(
         self, prompt: str, response_schema: Optional[BaseModel] = None, **kwargs: Any
-    ) -> AsyncIterator[AIResponse]:
+    ) -> AsyncIterator[StructuredResponse]:
         messages: List[ChatCompletionMessageParam] = [
             ChatCompletionUserMessageParam(role="user", content=prompt)
         ]
@@ -123,7 +124,7 @@ class OpenAIClient(BaseStructuredClient):
                             if is_list and hasattr(event.parsed, "data")
                             else event.parsed
                         )
-                        yield AIResponse(
+                        yield StructuredResponse(
                             content=content,
                             provider=StructuredOutputProvider.OPENAI,
                             metadata={
@@ -136,7 +137,7 @@ class OpenAIClient(BaseStructuredClient):
                 final_completion = await stream.get_final_completion()
                 usage = self.format_usage(final_completion.usage)
                 if usage:
-                    yield AIResponse(
+                    yield StructuredResponse(
                         content="",
                         usage=usage,
                         provider=StructuredOutputProvider.OPENAI,
@@ -153,7 +154,7 @@ class OpenAIClient(BaseStructuredClient):
         )
         async for chunk in response:
             if chunk.choices and chunk.choices[0].delta.content:
-                yield AIResponse(
+                yield StructuredResponse(
                     content=chunk.choices[0].delta.content,
                     provider=StructuredOutputProvider.OPENAI,
                     metadata={"model": self.model_name, "is_stream_chunk": True},
@@ -161,7 +162,7 @@ class OpenAIClient(BaseStructuredClient):
             elif chunk.usage:
                 usage = self.format_usage(chunk.usage)
                 if usage:
-                    yield AIResponse(
+                    yield StructuredResponse(
                         content="",  # Empty content for the usage-only response
                         usage=usage,
                         provider=StructuredOutputProvider.OPENAI,
