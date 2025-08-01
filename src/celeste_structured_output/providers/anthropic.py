@@ -1,26 +1,30 @@
+from __future__ import annotations
+
 from typing import Any, AsyncIterator, Optional
 
 from anthropic import AsyncAnthropic
 from anthropic.types import MessageParam
+from pydantic import BaseModel
 
-from celeste_client.base import BaseStructuredClient
-from celeste_client.core.config import ANTHROPIC_API_KEY
-from celeste_client.core.enums import StructuredOutputProvider, AnthropicModel
-from celeste_client.core.types import AIResponse, AIUsage
+from ..base import BaseStructuredClient
+from ..core.config import ANTHROPIC_API_KEY
+from ..core.enums import AnthropicStructuredModel as AnthropicModel
+from ..core.enums import StructuredOutputProvider
+from ..core.types import AIUsage, StructuredResponse
 
 MAX_TOKENS = 1024
 
 
-class AnthropicClient(BaseStructuredClient):
+class AnthropicStructuredClient(BaseStructuredClient):
     def __init__(
         self,
-        model: str = AnthropicModel.CLAUDE_3_7_SONNET.value,
+        model: str | AnthropicModel = AnthropicModel.CLAUDE_3_7_SONNET,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
 
         self.client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
-        self.model_name = model
+        self.model_name = model.value if isinstance(model, AnthropicModel) else model
 
     def format_usage(self, usage_data: Any) -> Optional[AIUsage]:
         """Convert Anthropic usage data to AIUsage."""
@@ -32,50 +36,76 @@ class AnthropicClient(BaseStructuredClient):
             total_tokens=usage_data.input_tokens + usage_data.output_tokens,
         )
 
-    async def generate_content(self, prompt: str, **kwargs: Any) -> AIResponse:
+    async def generate_content(
+        self, prompt: str, response_schema: BaseModel, **kwargs: Any
+    ) -> StructuredResponse:
         max_tokens = kwargs.pop("max_tokens", MAX_TOKENS)
+        tools = [
+            {
+                "name": "structured_output",
+                "description": "Return a JSON object matching the provided schema",
+                "input_schema": response_schema.model_json_schema(),
+            }
+        ]
+
         response = await self.client.messages.create(
             max_tokens=max_tokens,
             messages=[MessageParam(role="user", content=prompt)],
             model=self.model_name,
+            tools=tools,
+            tool_choice="auto",
             **kwargs,
         )
 
-        return AIResponse(
-            content=response.content[0].text,
+        tool_use = next(
+            (b.input for b in response.content if getattr(b, "type", "") == "tool_use"),
+            None,
+        )
+        content = response_schema.model_validate(tool_use or {})
+
+        return StructuredResponse(
+            content=content,
             usage=self.format_usage(response.usage),
             provider=StructuredOutputProvider.ANTHROPIC,
             metadata={"model": self.model_name},
         )
 
     async def stream_generate_content(
-        self, prompt: str, **kwargs: Any
-    ) -> AsyncIterator[AIResponse]:
+        self, prompt: str, response_schema: BaseModel, **kwargs: Any
+    ) -> AsyncIterator[StructuredResponse]:
         max_tokens = kwargs.pop("max_tokens", MAX_TOKENS)
+        tools = [
+            {
+                "name": "structured_output",
+                "description": "Return a JSON object matching the provided schema",
+                "input_schema": response_schema.model_json_schema(),
+            }
+        ]
+
         async with self.client.messages.stream(
             model=self.model_name,
             max_tokens=max_tokens,
             messages=[MessageParam(role="user", content=prompt)],
+            tools=tools,
+            tool_choice="auto",
             **kwargs,
         ) as stream:
-            async for text in stream.text_stream:
-                yield AIResponse(
-                    content=text,
-                    provider=StructuredOutputProvider.ANTHROPIC,
-                    metadata={"model": self.model_name, "is_stream_chunk": True},
-                )
+            snapshot: dict[str, Any] | None = None
+            async for event in stream:
+                if getattr(event, "type", "") == "input_json":
+                    snapshot = event.snapshot
+                    yield StructuredResponse(
+                        content=response_schema.model_validate(snapshot),
+                        provider=StructuredOutputProvider.ANTHROPIC,
+                        metadata={"model": self.model_name, "is_stream_chunk": True},
+                    )
 
-            # Get final usage data
             final_message = await stream.get_final_message()
             usage = self.format_usage(final_message.usage if final_message else None)
             if usage:
-                yield AIResponse(
-                    content="",
+                yield StructuredResponse(
+                    content=None,
                     usage=usage,
                     provider=StructuredOutputProvider.ANTHROPIC,
-                    metadata={
-                        "model": self.model_name,
-                        "is_stream_chunk": True,
-                        "usage_only": True,
-                    },
+                    metadata={"model": self.model_name, "is_final_usage": True},
                 )

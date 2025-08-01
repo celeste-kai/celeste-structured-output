@@ -37,9 +37,9 @@ def create_structured_client(
         return MistralStructuredClient(**kwargs)
 
     if provider == StructuredOutputProvider.ANTHROPIC:
-        from .providers.anthropic import AnthropicClient
+        from .providers.anthropic import AnthropicStructuredClient
 
-        return AnthropicClient(**kwargs)
+        return AnthropicStructuredClient(**kwargs)
 
     raise ValueError(f"StructuredOutputProvider {provider} not implemented")
 
