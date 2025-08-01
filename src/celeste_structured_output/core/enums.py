@@ -10,6 +10,10 @@ class StructuredOutputProvider(Enum):
 
     GOOGLE = "google"
     OPENAI = "openai"
+    ANTHROPIC = "anthropic"
+    MISTRAL = "mistral"
+    HUGGINGFACE = "huggingface"
+    OLLAMA = "ollama"
 
 class GoogleStructuredModel(Enum):
     """Google model enumeration for provider-specific model selection."""
