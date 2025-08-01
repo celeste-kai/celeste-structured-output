@@ -10,7 +10,11 @@ class StructuredOutputProvider(Enum):
 
     GOOGLE = "google"
     OPENAI = "openai"
+    ANTHROPIC = "anthropic"
     MISTRAL = "mistral"
+    HUGGINGFACE = "huggingface"
+    OLLAMA = "ollama"
+
 
 class GoogleStructuredModel(Enum):
     """Google model enumeration for provider-specific model selection."""
@@ -44,3 +48,12 @@ class AnthropicStructuredModel(Enum):
     CLAUDE_4_SONNET = "claude-sonnet-4-20250514"
     CLAUDE_4_OPUS = "claude-opus-4-20250514"
 
+
+class HuggingFaceModel(Enum):
+    """Hugging Face model enumeration for provider-specific model selection."""
+
+    GEMMA_2_2B = "google/gemma-2-2b-it"
+    META_LLAMA_3_1_8B = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+    MICROSOFT_PHI_4 = "microsoft/phi-4"
+    QWEN_2_5_7B_1M = "Qwen/Qwen2.5-7B-Instruct-1M"
+    DEEPSEEK_R1 = "deepseek-ai/DeepSeek-R1"
