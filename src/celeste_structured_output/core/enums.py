@@ -11,9 +11,6 @@ class StructuredOutputProvider(Enum):
     GOOGLE = "google"
     OPENAI = "openai"
     MISTRAL = "mistral"
-    ANTHROPIC = "anthropic"
-    HUGGINGFACE = "huggingface"
-    OLLAMA = "ollama"
 
 
 class GoogleStructuredModel(Enum):

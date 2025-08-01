@@ -32,9 +32,9 @@ def create_structured_client(
         return HuggingFaceStructuredClient(**kwargs)
 
     if provider == StructuredOutputProvider.MISTRAL:
-        from .providers.mistral import MistralClient
+        from .providers.mistral import MistralStructuredClient
 
-        return MistralClient(**kwargs)
+        return MistralStructuredClient(**kwargs)
 
     if provider == StructuredOutputProvider.ANTHROPIC:
         from .providers.anthropic import AnthropicClient
