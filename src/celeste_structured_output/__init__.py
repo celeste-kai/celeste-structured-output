@@ -5,12 +5,14 @@ Celeste AI Client - Minimal predefinition AI communication for Alita agents.
 from typing import Any, Union
 
 from .base import BaseStructuredClient
-from .core import StructuredResponse, StructuredOutputProvider
+from .core import StructuredOutputProvider, StructuredResponse
 
 __version__ = "0.1.0"
 
 
-def create_structured_client(provider: Union[StructuredOutputProvider, str], **kwargs: Any) -> BaseStructuredClient:
+def create_structured_client(
+    provider: Union[StructuredOutputProvider, str], **kwargs: Any
+) -> BaseStructuredClient:
     if isinstance(provider, str):
         provider = StructuredOutputProvider(provider)
 
@@ -23,6 +25,11 @@ def create_structured_client(provider: Union[StructuredOutputProvider, str], **k
         from .providers.openai import OpenAIClient
 
         return OpenAIClient(**kwargs)
+
+    if provider == StructuredOutputProvider.HUGGINGFACE:
+        from .providers.huggingface import HuggingFaceStructuredClient
+
+        return HuggingFaceStructuredClient(**kwargs)
 
     if provider == StructuredOutputProvider.MISTRAL:
         from .providers.mistral import MistralClient
@@ -41,5 +48,5 @@ __all__ = [
     "create_structured_client",
     "BaseStructuredClient",
     "StructuredOutputProvider",
-    "StructuredResponse"
+    "StructuredResponse",
 ]
